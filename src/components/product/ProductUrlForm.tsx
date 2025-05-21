@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { scrapeAmazonProduct } from '@/utils/scraperService';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface ProductUrlFormProps {
   className?: string;
@@ -13,6 +14,7 @@ interface ProductUrlFormProps {
 const ProductUrlForm = ({ className }: ProductUrlFormProps) => {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const isAmazonUrl = (url: string) => {
@@ -50,13 +52,16 @@ const ProductUrlForm = ({ className }: ProductUrlFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     if (!url) {
-      toast('Please enter an Amazon product URL');
+      setError('Please enter an Amazon product URL');
+      toast.error('Please enter an Amazon product URL');
       return;
     }
     
     if (!isAmazonUrl(url)) {
+      setError('Please enter a valid Amazon URL');
       toast.error('Please enter a valid Amazon URL');
       return;
     }
@@ -68,6 +73,7 @@ const ProductUrlForm = ({ className }: ProductUrlFormProps) => {
       const asin = extractASIN(url);
       
       if (!asin) {
+        setError('Could not extract product ID from URL');
         toast.error('Could not extract product ID from URL');
         setLoading(false);
         return;
@@ -87,12 +93,21 @@ const ProductUrlForm = ({ className }: ProductUrlFormProps) => {
           description: `Successfully retrieved data for ${productData.name}`,
           duration: 3000
         });
+        
+        // Navigate to the product detail page
+        navigate(`/product/${asin}`);
+      } else {
+        // Even if scraping failed, we can still navigate to the product page
+        // which will use mock data as fallback
+        toast.warning('Using cached data', {
+          description: 'Could not get live data from Amazon, using stored information instead',
+          duration: 3000
+        });
+        navigate(`/product/${asin}`);
       }
-      
-      // Navigate to the product detail page
-      navigate(`/product/${asin}`);
     } catch (error) {
       console.error('Error fetching product:', error);
+      setError('Failed to fetch product data. Please try again.');
       toast.error('Failed to fetch product data. Please try again.');
     } finally {
       setLoading(false);
@@ -102,6 +117,7 @@ const ProductUrlForm = ({ className }: ProductUrlFormProps) => {
   const handlePasteExample = () => {
     // Example Amazon URL
     setUrl('https://www.amazon.com/dp/B08L5TNJHG');
+    setError(null);
     toast.info('Example URL pasted', {
       description: 'Click "Track Price" to see it in action!'
     });
@@ -109,11 +125,21 @@ const ProductUrlForm = ({ className }: ProductUrlFormProps) => {
 
   return (
     <div className="w-full max-w-2xl">
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
       <form onSubmit={handleSubmit} className={`flex w-full flex-col sm:flex-row gap-2 ${className}`}>
         <Input
           type="url"
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
+          onChange={(e) => {
+            setUrl(e.target.value);
+            setError(null);
+          }}
           placeholder="Paste Amazon product URL"
           className="flex-1"
           required

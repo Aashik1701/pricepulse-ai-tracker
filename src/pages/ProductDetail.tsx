@@ -11,7 +11,27 @@ import ProductMetadata from '@/components/product/ProductMetadata';
 import { mockProduct } from '@/data/mockData';
 import { toast } from 'sonner';
 import { ScrapedProductData, PriceComparisonItem, scrapeAmazonProduct, searchProductOnPlatforms } from '@/utils/scraperService';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
+/**
+ * ProductDetail page component
+ * 
+ * This page displays detailed information about a product, including:
+ * - Basic product details (name, image, price)
+ * - Price history chart
+ * - Price comparisons across platforms
+ * - Price alert setup form
+ * - Product metadata
+ * 
+ * Database integration notes:
+ * - Product data should be stored in a database for persistence
+ * - Price history should be tracked over time with regular scraping
+ * - Price alerts should be stored and processed on the backend
+ * - Recommended database: 
+ *   1. SQL DB (PostgreSQL) for structured product and price data
+ *   2. NoSQL (MongoDB) for flexible metadata storage
+ *   3. For small-scale: SQLite or Firebase Realtime Database
+ */
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -24,6 +44,7 @@ const ProductDetail = () => {
   // State for product data
   const [productData, setProductData] = useState<ScrapedProductData | null>(null);
   const [priceComparison, setPriceComparison] = useState<PriceComparisonItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
   
   // Use the mockProduct's priceHistory for now
   const priceHistory = mockProduct.priceHistory;
@@ -32,6 +53,7 @@ const ProductDetail = () => {
     // Function to fetch product data
     const fetchProductData = async () => {
       setLoading(prev => ({ ...prev, product: true }));
+      setError(null);
       
       try {
         // Construct Amazon URL from ID
@@ -58,15 +80,7 @@ const ProductDetail = () => {
             previousPrice: mockProduct.previousPrice,
             currency: mockProduct.currency,
             asin: mockProduct.asin,
-            metadata: {
-              brand: "Samsung",
-              model: "Galaxy S21",
-              category: "Electronics",
-              features: ["5G Connectivity", "128GB Storage", "8GB RAM", "12MP Camera"],
-              color: "Phantom Gray",
-              processor: "Exynos 2100",
-              batteryLife: "4000mAh"
-            },
+            metadata: mockProduct.metadata,
             lastUpdated: mockProduct.lastUpdated
           });
           document.title = `${mockProduct.name} - Price Tracking | PricePulse`;
@@ -74,8 +88,9 @@ const ProductDetail = () => {
         }
       } catch (error) {
         console.error("Error fetching product data:", error);
+        setError("Failed to load product data. Please try again later.");
         toast.error("Failed to load product data");
-        navigate('/');
+        // Don't navigate away, show error on current page
       } finally {
         setLoading(prev => ({ ...prev, product: false }));
       }
@@ -105,12 +120,18 @@ const ProductDetail = () => {
       } catch (error) {
         console.error("Error fetching comparison data:", error);
         toast.error("Failed to load price comparison data");
+        // Still show the product page, just without comparison data
       } finally {
         setLoading(prev => ({ ...prev, comparison: false }));
       }
     };
     
-    fetchProductData();
+    if (id) {
+      fetchProductData();
+    } else {
+      setError("No product ID provided");
+      navigate('/');
+    }
   }, [id, navigate]);
   
   // If still loading the main product, show a loading state
@@ -129,7 +150,31 @@ const ProductDetail = () => {
     );
   }
   
-  // If no product data was loaded, show error state
+  // If error occurred and no product data was loaded, show error state
+  if (error && !productData) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-1 py-8">
+          <div className="container px-4 flex flex-col items-center justify-center h-full">
+            <Alert variant="destructive" className="max-w-md mb-6">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+            <button 
+              onClick={() => navigate('/')} 
+              className="px-4 py-2 bg-pulse-blue-600 text-white rounded-md hover:bg-pulse-blue-700"
+            >
+              Go Home
+            </button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+  
+  // If no product data was loaded, show not found state
   if (!productData) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -157,6 +202,13 @@ const ProductDetail = () => {
       
       <main className="flex-1 py-8">
         <div className="container px-4 space-y-6">
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTitle>Warning</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
           <ProductDetails
             name={productData.name || 'Unknown Product'}
             imageUrl={productData.imageUrl || 'https://via.placeholder.com/300'}

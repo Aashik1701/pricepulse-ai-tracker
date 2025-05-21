@@ -31,7 +31,51 @@ export interface PriceComparisonItem {
   inStock?: boolean;
 }
 
-const CORS_PROXY = 'https://corsproxy.io/?';
+// Database schema types - for future implementation
+export interface ProductSchema {
+  id: string;
+  asin: string;
+  name: string;
+  imageUrl: string;
+  currentPrice: number;
+  previousPrice: number;
+  lowestPrice: number;
+  highestPrice: number;
+  currency: string;
+  lastUpdated: Date;
+  metadata: {
+    brand?: string;
+    model?: string;
+    category?: string;
+    features?: string[];
+    [key: string]: any;
+  };
+}
+
+export interface PriceHistorySchema {
+  id: string;
+  productId: string;
+  price: number;
+  date: Date;
+}
+
+export interface PriceAlertSchema {
+  id: string;
+  productId: string;
+  userId: string;
+  targetPrice: number;
+  email: string;
+  isActive: boolean;
+  createdAt: Date;
+  lastNotifiedAt?: Date;
+}
+
+// List of CORS proxies to try in case one fails
+const CORS_PROXIES = [
+  'https://corsproxy.io/?',
+  'https://api.allorigins.win/raw?url=',
+  'https://crossorigin.me/'
+];
 
 /**
  * Scrapes product data from an Amazon product URL
@@ -39,117 +83,157 @@ const CORS_PROXY = 'https://corsproxy.io/?';
  * In a real-world scenario, this would be handled by a backend service.
  */
 export async function scrapeAmazonProduct(url: string): Promise<ScrapedProductData | null> {
-  try {
-    // Validate the URL is from Amazon
-    if (!isAmazonUrl(url)) {
-      toast.error('Please provide a valid Amazon URL');
-      return null;
-    }
-
-    const asin = extractASIN(url);
-    if (!asin) {
-      toast.error('Could not extract product ID from the URL');
-      return null;
-    }
-
-    // Use CORS proxy to fetch the page content
-    toast.info('Fetching product data...', {
-      description: 'This may take a few moments'
-    });
-    
-    const response = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch page: ${response.status}`);
-    }
-
-    const html = await response.text();
-    
-    // Parse the HTML to extract product data
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    
-    // Extract product data using selectors
-    // These selectors may need to be updated as Amazon's HTML structure changes
-    const name = extractText(doc, '#productTitle');
-    const imageUrl = extractAttribute(doc, '#landingImage', 'src') || 
-                     extractAttribute(doc, '#imgBlkFront', 'src') ||
-                     extractAttribute(doc, '#img-canvas img', 'src');
-    
-    // Price extraction is complex due to various formats
-    const priceText = extractText(doc, '.a-price .a-offscreen') || 
-                      extractText(doc, '#priceblock_ourprice') ||
-                      extractText(doc, '#priceblock_dealprice');
-    
-    // Extract previous price if available
-    const previousPriceText = extractText(doc, '.a-price.a-text-price .a-offscreen') ||
-                              extractText(doc, '.a-text-strike');
-    
-    // Parse prices and currency
-    const { price: currentPrice, currency } = parsePrice(priceText || '');
-    const { price: previousPrice } = parsePrice(previousPriceText || '');
-    
-    // Log what we found to help with debugging
-    console.log('Extracted product data:', {
-      name,
-      imageUrl,
-      priceText,
-      currentPrice,
-      previousPriceText,
-      previousPrice,
-      currency
-    });
-
-    // Extract product description for metadata extraction
-    const descriptionText = Array.from(doc.querySelectorAll('#feature-bullets li'))
-      .map(el => el.textContent?.trim())
-      .filter(Boolean)
-      .join(' ');
-
-    // Extract and enhance metadata using OpenAI
-    toast.info('Extracting product metadata...');
-    let metadata = await extractMetadata(doc, name || '');
-    
-    try {
-      // Use OpenAI to enhance product metadata
-      const enhancedMetadata = await OpenAIService.extractProductMetadata(
-        name || '', 
-        descriptionText
-      );
-      
-      // Merge the scraped metadata with the AI-enhanced metadata
-      metadata = {
-        ...metadata,
-        ...enhancedMetadata
-      };
-      
-      toast.success('AI metadata extraction complete');
-    } catch (error) {
-      console.error('Error extracting metadata with AI:', error);
-      toast.warning('Using basic metadata extraction');
-    }
-    
-    const productData: ScrapedProductData = {
-      name,
-      imageUrl,
-      currentPrice: currentPrice || 0,
-      previousPrice: previousPrice || (currentPrice ? currentPrice * 1.1 : 0), // Fallback if no previous price
-      currency: currency || '$',
-      asin,
-      metadata,
-      lastUpdated: new Date()
-    };
-
-    return productData;
-  } catch (error) {
-    console.error('Error scraping product:', error);
-    toast.error('Failed to scrape product data. Using mock data instead.');
+  // Validate the URL is from Amazon
+  if (!isAmazonUrl(url)) {
+    toast.error('Please provide a valid Amazon URL');
     return null;
   }
+
+  const asin = extractASIN(url);
+  if (!asin) {
+    toast.error('Could not extract product ID from the URL');
+    return null;
+  }
+
+  toast.info('Fetching product data...', {
+    description: 'This may take a few moments'
+  });
+  
+  // Try different proxies in case one fails
+  for (let i = 0; i < CORS_PROXIES.length; i++) {
+    try {
+      const proxyUrl = `${CORS_PROXIES[i]}${encodeURIComponent(url)}`;
+      console.log(`Attempting to fetch with proxy: ${CORS_PROXIES[i]}`);
+      
+      const response = await fetch(proxyUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        },
+        // Adding a timeout to prevent hanging requests
+        signal: AbortSignal.timeout(15000)
+      });
+
+      if (!response.ok) {
+        console.error(`Proxy ${i+1} failed with status: ${response.status}`);
+        
+        // If we get a 403, specifically check for country blocking
+        if (response.status === 403) {
+          const responseText = await response.text();
+          if (responseText.includes('Country blocked') || responseText.includes('blocked from accessing')) {
+            console.log('Country blocking detected in response');
+            continue; // Try next proxy
+          }
+        }
+        
+        throw new Error(`Failed to fetch page: ${response.status}`);
+      }
+
+      const html = await response.text();
+      
+      // Parse the HTML to extract product data
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      // Extract product data using selectors
+      const name = extractText(doc, '#productTitle');
+      const imageUrl = extractAttribute(doc, '#landingImage', 'src') || 
+                      extractAttribute(doc, '#imgBlkFront', 'src') ||
+                      extractAttribute(doc, '#img-canvas img', 'src');
+      
+      // Price extraction is complex due to various formats
+      const priceText = extractText(doc, '.a-price .a-offscreen') || 
+                        extractText(doc, '#priceblock_ourprice') ||
+                        extractText(doc, '#priceblock_dealprice');
+      
+      // Extract previous price if available
+      const previousPriceText = extractText(doc, '.a-price.a-text-price .a-offscreen') ||
+                                extractText(doc, '.a-text-strike');
+      
+      // Parse prices and currency
+      const { price: currentPrice, currency } = parsePrice(priceText || '');
+      const { price: previousPrice } = parsePrice(previousPriceText || '');
+      
+      // Log what we found to help with debugging
+      console.log('Extracted product data:', {
+        name,
+        imageUrl,
+        priceText,
+        currentPrice,
+        previousPriceText,
+        previousPrice,
+        currency
+      });
+
+      // Check if we got any product data
+      if (!name && !currentPrice) {
+        console.error('Failed to extract essential product data');
+        throw new Error('Could not extract product information from the page');
+      }
+
+      // Extract product description for metadata extraction
+      const descriptionText = Array.from(doc.querySelectorAll('#feature-bullets li'))
+        .map(el => el.textContent?.trim())
+        .filter(Boolean)
+        .join(' ');
+
+      // Extract and enhance metadata using OpenAI
+      toast.info('Extracting product metadata...');
+      let metadata = await extractMetadata(doc, name || '');
+      
+      try {
+        // Use OpenAI to enhance product metadata
+        const enhancedMetadata = await OpenAIService.extractProductMetadata(
+          name || '', 
+          descriptionText
+        );
+        
+        // Merge the scraped metadata with the AI-enhanced metadata
+        metadata = {
+          ...metadata,
+          ...enhancedMetadata
+        };
+        
+        toast.success('AI metadata extraction complete');
+      } catch (error) {
+        console.error('Error extracting metadata with AI:', error);
+        toast.warning('Using basic metadata extraction');
+      }
+      
+      const productData: ScrapedProductData = {
+        name,
+        imageUrl,
+        currentPrice: currentPrice || 0,
+        previousPrice: previousPrice || (currentPrice ? currentPrice * 1.1 : 0), // Fallback if no previous price
+        currency: currency || '$',
+        asin,
+        metadata,
+        lastUpdated: new Date()
+      };
+
+      toast.success('Product data extracted successfully');
+      return productData;
+      
+    } catch (error) {
+      console.error(`Error scraping product with proxy ${i+1}:`, error);
+      
+      // If we've tried all proxies and still failed
+      if (i === CORS_PROXIES.length - 1) {
+        toast.error('All scraping attempts failed. Using mock data instead.');
+        
+        // Log the specific error for debugging
+        if (error instanceof Error) {
+          console.error('Final scraping error:', error.message);
+        }
+        
+        return null;
+      }
+      
+      // Try the next proxy
+      toast.warning(`Scraping attempt ${i+1} failed. Trying another method...`);
+    }
+  }
+
+  return null;
 }
 
 /**
