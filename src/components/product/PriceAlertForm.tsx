@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import EmailAlertPreview from './EmailAlertPreview';
+import { mockProduct } from '@/data/mockData';
 
 interface PriceAlertFormProps {
   productId: string;
@@ -15,6 +17,7 @@ const PriceAlertForm = ({ productId, currentPrice, currency }: PriceAlertFormPro
   const [email, setEmail] = useState('');
   const [targetPrice, setTargetPrice] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   
   const formatPrice = (price: number) => `${currency}${price.toFixed(2)}`;
   
@@ -47,9 +50,8 @@ const PriceAlertForm = ({ productId, currentPrice, currency }: PriceAlertFormPro
       
       toast.success(`We'll email you at ${email} when the price drops below ${formatPrice(parsedTargetPrice)}`);
       
-      // Reset the form
-      setEmail('');
-      setTargetPrice('');
+      // Show the email preview
+      setShowPreview(true);
     } catch (error) {
       console.error('Error setting price alert:', error);
       toast.error('Failed to set price alert. Please try again.');
@@ -121,6 +123,20 @@ const PriceAlertForm = ({ productId, currentPrice, currency }: PriceAlertFormPro
             )}
           </Button>
         </form>
+        
+        {showPreview && targetPrice && (
+          <div className="mt-6">
+            <h3 className="text-sm font-medium mb-2">Email Preview</h3>
+            <EmailAlertPreview
+              productName={mockProduct.name}
+              productImage={mockProduct.imageUrl}
+              currentPrice={currentPrice}
+              targetPrice={parseFloat(targetPrice)}
+              currency={currency}
+              productUrl={`https://www.amazon.com/dp/${mockProduct.asin}`}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );
