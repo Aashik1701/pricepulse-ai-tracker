@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -18,6 +19,9 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				sans: ['Inter', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -61,7 +65,34 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// Custom PricePulse colors
+				'pulse-blue': {
+					50: '#f0f7ff',
+					100: '#e0effe',
+					200: '#bae0fd',
+					300: '#7cc5fb',
+					400: '#36a6f6',
+					500: '#0c89e9',
+					600: '#006cc7',
+					700: '#0057a2',
+					800: '#064b85',
+					900: '#0b406e',
+					950: '#07294a',
+				},
+				'pulse-green': {
+					50: '#f0fdf4',
+					100: '#dcfce7',
+					200: '#bbf7d0',
+					300: '#86efac',
+					400: '#4ade80',
+					500: '#22c55e',
+					600: '#16a34a',
+					700: '#15803d',
+					800: '#166534',
+					900: '#14532d',
+					950: '#052e16',
+				},
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -84,11 +115,26 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.5' },
+				},
+				'fade-in': {
+					from: { opacity: '0', transform: 'translateY(10px)' },
+					to: { opacity: '1', transform: 'translateY(0)' },
+				},
+				'slide-in': {
+					from: { transform: 'translateX(-100%)' },
+					to: { transform: 'translateX(0)' },
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+				'fade-in': 'fade-in 0.5s ease-out',
+				'slide-in': 'slide-in 0.3s ease-out',
 			}
 		}
 	},
