@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { scrapeAmazonProduct } from '@/utils/scraperService';
 
 interface ProductUrlFormProps {
   className?: string;
@@ -25,7 +26,6 @@ const ProductUrlForm = ({ className }: ProductUrlFormProps) => {
 
   const extractASIN = (url: string) => {
     // This is a simplified ASIN extraction logic
-    // In real implementation, this would be more robust
     try {
       const parsedUrl = new URL(url);
       const pathParts = parsedUrl.pathname.split('/');
@@ -40,7 +40,9 @@ const ProductUrlForm = ({ className }: ProductUrlFormProps) => {
       const productId = parsedUrl.searchParams.get('psc');
       if (productId) return productId;
       
-      return null;
+      // Fallback - try to find any 10-character alphanumeric string that looks like an ASIN
+      const asinMatch = url.match(/[A-Z0-9]{10}/);
+      return asinMatch ? asinMatch[0] : null;
     } catch {
       return null;
     }
@@ -62,8 +64,7 @@ const ProductUrlForm = ({ className }: ProductUrlFormProps) => {
     setLoading(true);
     
     try {
-      // In a real implementation, this would make an API call
-      // For now, we'll simulate an API call with a timeout
+      // First try to extract the ASIN
       const asin = extractASIN(url);
       
       if (!asin) {
@@ -71,16 +72,21 @@ const ProductUrlForm = ({ className }: ProductUrlFormProps) => {
         setLoading(false);
         return;
       }
+
+      // Attempt to scrape product data
+      const productData = await scrapeAmazonProduct(url);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (productData) {
+        toast.success('Product found!', {
+          description: `Successfully retrieved data for ${productData.name}`,
+        });
+      }
       
-      // In a real implementation, we'd navigate to the actual product page
-      // with the data returned from the API
-      navigate(`/product/B08L5TNJHG`);
+      // Navigate to the product detail page
+      navigate(`/product/${asin}`);
     } catch (error) {
       console.error('Error fetching product:', error);
-      toast('Failed to fetch product data. Please try again.');
+      toast.error('Failed to fetch product data. Please try again.');
     } finally {
       setLoading(false);
     }
