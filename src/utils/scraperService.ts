@@ -1,5 +1,6 @@
 
 import { toast } from 'sonner';
+import { OpenAIService } from '@/services/OpenAIService';
 
 // Types for scraper responses
 export interface ScrapedProductData {
@@ -52,6 +53,10 @@ export async function scrapeAmazonProduct(url: string): Promise<ScrapedProductDa
     }
 
     // Use CORS proxy to fetch the page content
+    toast.info('Fetching product data...', {
+      description: 'This may take a few moments'
+    });
+    
     const response = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -88,8 +93,45 @@ export async function scrapeAmazonProduct(url: string): Promise<ScrapedProductDa
     const { price: currentPrice, currency } = parsePrice(priceText || '');
     const { price: previousPrice } = parsePrice(previousPriceText || '');
     
-    // Extract metadata
-    const metadata = await extractMetadata(doc, name || '');
+    // Log what we found to help with debugging
+    console.log('Extracted product data:', {
+      name,
+      imageUrl,
+      priceText,
+      currentPrice,
+      previousPriceText,
+      previousPrice,
+      currency
+    });
+
+    // Extract product description for metadata extraction
+    const descriptionText = Array.from(doc.querySelectorAll('#feature-bullets li'))
+      .map(el => el.textContent?.trim())
+      .filter(Boolean)
+      .join(' ');
+
+    // Extract and enhance metadata using OpenAI
+    toast.info('Extracting product metadata...');
+    let metadata = await extractMetadata(doc, name || '');
+    
+    try {
+      // Use OpenAI to enhance product metadata
+      const enhancedMetadata = await OpenAIService.extractProductMetadata(
+        name || '', 
+        descriptionText
+      );
+      
+      // Merge the scraped metadata with the AI-enhanced metadata
+      metadata = {
+        ...metadata,
+        ...enhancedMetadata
+      };
+      
+      toast.success('AI metadata extraction complete');
+    } catch (error) {
+      console.error('Error extracting metadata with AI:', error);
+      toast.warning('Using basic metadata extraction');
+    }
     
     const productData: ScrapedProductData = {
       name,
@@ -118,66 +160,76 @@ export async function searchProductOnPlatforms(
   brand?: string,
   model?: string
 ): Promise<PriceComparisonItem[]> {
-  // In a real implementation, this would search across platforms
-  // For now, simulate the search with a delay
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  toast.info('Searching for product across platforms...', {
+    description: 'This may take a few moments'
+  });
   
-  // Simplified search - in reality, we would need platform-specific scraping logic
-  // or use their APIs if available
-  const searchTerm = `${brand || ''} ${model || ''} ${productName}`.trim();
-  console.log(`Searching for: ${searchTerm}`);
-  
-  // Simulate scraping results from different marketplaces
-  // In a real implementation, we would fetch and parse data from each marketplace
-  const results: PriceComparisonItem[] = [
-    {
-      marketplace: 'Amazon',
-      productName: productName || '',
-      price: Math.random() * 100 + 400, // Random price between 400-500
-      currency: '₹',
-      url: `https://www.amazon.com/dp/${extractASIN(window.location.href) || 'B08L5TNJHG'}`,
-      lastUpdated: new Date(),
-      inStock: true
-    },
-    {
-      marketplace: 'Flipkart',
-      productName: `${brand || ''} ${model || ''} ${productName?.substring(0, 30)}...`,
-      price: Math.random() * 100 + 390, // Random price between 390-490
-      currency: '₹',
-      url: `https://www.flipkart.com/search?q=${encodeURIComponent(searchTerm)}`,
-      lastUpdated: new Date(),
-      inStock: Math.random() > 0.2 // 80% chance of being in stock
-    },
-    {
-      marketplace: 'Meesho',
-      productName: `${brand || ''} ${productName?.substring(0, 25)}...`,
-      price: Math.random() * 100 + 380, // Random price between 380-480
-      currency: '₹',
-      url: `https://www.meesho.com/search?q=${encodeURIComponent(searchTerm)}`,
-      lastUpdated: new Date(),
-      inStock: Math.random() > 0.3 // 70% chance of being in stock
-    },
-    {
-      marketplace: 'BigBasket',
-      productName: `${brand || ''} ${model || ''} - Premium`,
-      price: Math.random() * 100 + 410, // Random price between 410-510
-      currency: '₹',
-      url: `https://www.bigbasket.com/ps/?q=${encodeURIComponent(searchTerm)}`,
-      lastUpdated: new Date(),
-      inStock: Math.random() > 0.4 // 60% chance of being in stock
-    },
-    {
-      marketplace: 'Swiggy Instamart',
-      productName: `${brand || ''} ${model || ''}`,
-      price: Math.random() * 100 + 420, // Random price between 420-520
-      currency: '₹',
-      url: `https://www.swiggy.com/search?query=${encodeURIComponent(searchTerm)}`,
-      lastUpdated: new Date(),
-      inStock: Math.random() > 0.5 // 50% chance of being in stock
-    }
-  ];
-  
-  return results.sort((a, b) => a.price - b.price);
+  try {
+    // In a real implementation, this would search across platforms
+    // For now, simulate the search with a delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Simplified search - in reality, we would need platform-specific scraping logic
+    // or use their APIs if available
+    const searchTerm = `${brand || ''} ${model || ''} ${productName}`.trim();
+    console.log(`Searching for: ${searchTerm}`);
+    
+    // Simulate scraping results from different marketplaces
+    // In a real implementation, we would fetch and parse data from each marketplace
+    const results: PriceComparisonItem[] = [
+      {
+        marketplace: 'Amazon',
+        productName: productName || '',
+        price: Math.random() * 100 + 400, // Random price between 400-500
+        currency: '₹',
+        url: `https://www.amazon.com/dp/${extractASIN(window.location.href) || 'B08L5TNJHG'}`,
+        lastUpdated: new Date(),
+        inStock: true
+      },
+      {
+        marketplace: 'Flipkart',
+        productName: `${brand || ''} ${model || ''} ${productName?.substring(0, 30)}...`,
+        price: Math.random() * 100 + 390, // Random price between 390-490
+        currency: '₹',
+        url: `https://www.flipkart.com/search?q=${encodeURIComponent(searchTerm)}`,
+        lastUpdated: new Date(),
+        inStock: Math.random() > 0.2 // 80% chance of being in stock
+      },
+      {
+        marketplace: 'Meesho',
+        productName: `${brand || ''} ${productName?.substring(0, 25)}...`,
+        price: Math.random() * 100 + 380, // Random price between 380-480
+        currency: '₹',
+        url: `https://www.meesho.com/search?q=${encodeURIComponent(searchTerm)}`,
+        lastUpdated: new Date(),
+        inStock: Math.random() > 0.3 // 70% chance of being in stock
+      },
+      {
+        marketplace: 'BigBasket',
+        productName: `${brand || ''} ${model || ''} - Premium`,
+        price: Math.random() * 100 + 410, // Random price between 410-510
+        currency: '₹',
+        url: `https://www.bigbasket.com/ps/?q=${encodeURIComponent(searchTerm)}`,
+        lastUpdated: new Date(),
+        inStock: Math.random() > 0.4 // 60% chance of being in stock
+      },
+      {
+        marketplace: 'Swiggy Instamart',
+        productName: `${brand || ''} ${model || ''}`,
+        price: Math.random() * 100 + 420, // Random price between 420-520
+        currency: '₹',
+        url: `https://www.swiggy.com/search?query=${encodeURIComponent(searchTerm)}`,
+        lastUpdated: new Date(),
+        inStock: Math.random() > 0.5 // 50% chance of being in stock
+      }
+    ];
+    
+    return results.sort((a, b) => a.price - b.price);
+  } catch (error) {
+    console.error('Error searching across platforms:', error);
+    toast.error('Failed to search across platforms');
+    return [];
+  }
 }
 
 // Helper functions

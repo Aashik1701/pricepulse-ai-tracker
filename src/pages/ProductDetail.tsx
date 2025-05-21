@@ -100,7 +100,7 @@ const ProductDetail = () => {
           });
         } else {
           // Use mock comparison data
-          setPriceComparison(mockProduct.priceComparison || []);
+          setPriceComparison(mockProduct.priceComparison);
         }
       } catch (error) {
         console.error("Error fetching comparison data:", error);

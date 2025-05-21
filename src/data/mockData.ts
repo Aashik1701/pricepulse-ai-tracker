@@ -1,78 +1,90 @@
 
-// Mock data for development purposes
+// This file contains mock data for development and testing purposes
 
-// Helper function to create price history data
-const generatePriceHistory = (
-  startPrice: number, 
-  endPrice: number, 
-  days: number, 
-  volatility: number
-): { date: Date; price: number }[] => {
-  const priceHistory = [];
-  const now = new Date();
-  const priceRange = endPrice - startPrice;
-  const dailyChange = priceRange / days;
-  
-  for (let i = days; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(now.getDate() - i);
-    
-    // Add some randomness to the price
-    const randomVariation = (Math.random() - 0.5) * 2 * volatility;
-    let price = startPrice + (dailyChange * (days - i)) + randomVariation;
-    
-    // Ensure the price is positive
-    price = Math.max(0.01, price);
-    
-    priceHistory.push({ date, price });
-  }
-  
-  return priceHistory;
-};
+import { PriceComparisonItem } from '@/utils/scraperService';
 
-// Mock product data
 export const mockProduct = {
-  id: 'B08L5TNJHG',
-  asin: 'B08L5TNJHG',
-  name: 'Samsung Galaxy S21 5G | Factory Unlocked Android Cell Phone | 128GB | Phantom Gray',
-  imageUrl: 'https://m.media-amazon.com/images/I/61jYjeuNUnL._AC_SL1500_.jpg',
-  currentPrice: 599.99,
-  previousPrice: 699.99,
-  lowestPrice: 549.99,
-  highestPrice: 799.99,
-  currency: '$',
+  id: "123456",
+  asin: "B08L5TNJHG",
+  name: "Samsung Galaxy S21 5G Factory Unlocked Android Cell Phone 128GB",
+  imageUrl: "https://m.media-amazon.com/images/I/61jYjeuNUnL._AC_SL1000_.jpg",
+  currentPrice: 799.99,
+  previousPrice: 849.99,
+  lowestPrice: 749.99,
+  highestPrice: 899.99,
+  currency: "₹",
   lastUpdated: new Date(),
-  priceHistory: generatePriceHistory(799.99, 599.99, 90, 20)
+  priceHistory: [
+    { date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), price: 849.99 },
+    { date: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000), price: 849.99 },
+    { date: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000), price: 829.99 },
+    { date: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000), price: 799.99 },
+    { date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), price: 819.99 },
+    { date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), price: 799.99 },
+    { date: new Date(), price: 799.99 }
+  ],
+  priceComparison: [
+    {
+      marketplace: 'Amazon',
+      productName: 'Samsung Galaxy S21 5G Factory Unlocked Android Cell Phone 128GB',
+      price: 799.99,
+      currency: '₹',
+      url: 'https://www.amazon.com/dp/B08L5TNJHG',
+      lastUpdated: new Date(),
+      inStock: true
+    },
+    {
+      marketplace: 'Flipkart',
+      productName: 'Samsung Galaxy S21 5G (Phantom Gray, 128GB)',
+      price: 789.99,
+      currency: '₹',
+      url: 'https://www.flipkart.com/samsung-galaxy-s21-phantom-gray-128-gb/p/itm54400d2425487',
+      lastUpdated: new Date(),
+      inStock: true
+    },
+    {
+      marketplace: 'Meesho',
+      productName: 'Samsung Galaxy S21 128GB Unlocked',
+      price: 809.99,
+      currency: '₹',
+      url: 'https://www.meesho.com/samsung-galaxy-s21/p/3jd8c',
+      lastUpdated: new Date(),
+      inStock: false
+    }
+  ]
 };
 
-// Mock price comparison data
-export const mockPriceComparison = [
+export const mockRecentSearches = [
   {
-    marketplace: 'Amazon',
-    productName: 'Samsung Galaxy S21 5G | Factory Unlocked Android Cell Phone | 128GB | Phantom Gray',
-    price: 599.99,
-    currency: '$',
-    url: 'https://www.amazon.com/dp/B08L5TNJHG',
+    id: '1',
+    name: 'iPhone 13 Pro Max',
+    asin: 'B09G9HD6PD',
+    imageUrl: 'https://m.media-amazon.com/images/I/61i8Vjb17SL._AC_SL1500_.jpg',
+    currentPrice: 1099.99,
+    currency: '$'
   },
   {
-    marketplace: 'Walmart',
-    productName: 'Samsung Galaxy S21 5G, 128GB, Phantom Gray - Unlocked (Renewed)',
-    price: 579.99,
-    currency: '$',
-    url: '#',
+    id: '2',
+    name: 'Samsung TV Crystal UHD 65"',
+    asin: 'B094WSJJ79',
+    imageUrl: 'https://m.media-amazon.com/images/I/91RfzivKmwL._AC_SL1500_.jpg',
+    currentPrice: 599.99,
+    currency: '$'
   },
   {
-    marketplace: 'Best Buy',
-    productName: 'Samsung - Galaxy S21 5G 128GB - Phantom Gray (Unlocked)',
-    price: 629.99,
-    currency: '$',
-    url: '#',
-  },
-  {
-    marketplace: 'eBay',
-    productName: 'Samsung Galaxy S21 5G 128GB Unlocked Smartphone - Phantom Gray',
-    price: 549.99,
-    currency: '$',
-    url: '#',
+    id: '3',
+    name: 'Sony WH-1000XM4 Wireless Noise Cancelling Headphones',
+    asin: 'B0863TXGM3',
+    imageUrl: 'https://m.media-amazon.com/images/I/71+OQeZFZ+L._AC_SL1500_.jpg',
+    currentPrice: 299.99,
+    currency: '$'
   }
+];
+
+export const mockCategories = [
+  { id: '1', name: 'Electronics', count: 156 },
+  { id: '2', name: 'Home & Kitchen', count: 89 },
+  { id: '3', name: 'Fashion', count: 214 },
+  { id: '4', name: 'Books', count: 75 },
+  { id: '5', name: 'Toys & Games', count: 42 }
 ];

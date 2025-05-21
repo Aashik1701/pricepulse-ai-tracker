@@ -57,7 +57,7 @@ const ProductUrlForm = ({ className }: ProductUrlFormProps) => {
     }
     
     if (!isAmazonUrl(url)) {
-      toast('Please enter a valid Amazon URL');
+      toast.error('Please enter a valid Amazon URL');
       return;
     }
     
@@ -68,10 +68,16 @@ const ProductUrlForm = ({ className }: ProductUrlFormProps) => {
       const asin = extractASIN(url);
       
       if (!asin) {
-        toast('Could not extract product ID from URL');
+        toast.error('Could not extract product ID from URL');
         setLoading(false);
         return;
       }
+
+      // Show a progress toast
+      toast.info('Extracting product information...', {
+        description: 'This may take a moment as we analyze the product details',
+        duration: 5000
+      });
 
       // Attempt to scrape product data
       const productData = await scrapeAmazonProduct(url);
@@ -79,6 +85,7 @@ const ProductUrlForm = ({ className }: ProductUrlFormProps) => {
       if (productData) {
         toast.success('Product found!', {
           description: `Successfully retrieved data for ${productData.name}`,
+          duration: 3000
         });
       }
       
@@ -92,30 +99,53 @@ const ProductUrlForm = ({ className }: ProductUrlFormProps) => {
     }
   };
 
+  const handlePasteExample = () => {
+    // Example Amazon URL
+    setUrl('https://www.amazon.com/dp/B08L5TNJHG');
+    toast.info('Example URL pasted', {
+      description: 'Click "Track Price" to see it in action!'
+    });
+  };
+
   return (
-    <form onSubmit={handleSubmit} className={`flex w-full max-w-2xl flex-col sm:flex-row gap-2 ${className}`}>
-      <Input
-        type="url"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        placeholder="Paste Amazon product URL"
-        className="flex-1"
-        required
-      />
-      <Button type="submit" disabled={loading}>
-        {loading ? (
-          <>
-            <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>Loading...</span>
-          </>
-        ) : (
-          "Track Price"
-        )}
-      </Button>
-    </form>
+    <div className="w-full max-w-2xl">
+      <form onSubmit={handleSubmit} className={`flex w-full flex-col sm:flex-row gap-2 ${className}`}>
+        <Input
+          type="url"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="Paste Amazon product URL"
+          className="flex-1"
+          required
+        />
+        <Button type="submit" disabled={loading}>
+          {loading ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Loading...</span>
+            </>
+          ) : (
+            "Track Price"
+          )}
+        </Button>
+      </form>
+      
+      <div className="mt-2 text-center">
+        <button 
+          type="button" 
+          onClick={handlePasteExample}
+          className="text-sm text-pulse-blue-600 hover:underline"
+        >
+          Try with an example URL
+        </button>
+        <p className="text-xs text-muted-foreground mt-1">
+          Works with Amazon product URLs (e.g., amazon.com/dp/B08L5TNJHG)
+        </p>
+      </div>
+    </div>
   );
 };
 
