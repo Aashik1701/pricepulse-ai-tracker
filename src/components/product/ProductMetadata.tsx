@@ -10,7 +10,7 @@ interface ProductMetadataProps {
     model?: string;
     category?: string;
     features?: string[];
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
