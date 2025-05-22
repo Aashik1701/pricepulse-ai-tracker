@@ -9,6 +9,11 @@ import {
   isProxyRateLimited,
   getNonRateLimitedProxy
 } from './proxyUtils';
+import { 
+  getBestAvailableProxy, 
+  recordProxySuccess, 
+  recordProxyFailure 
+} from './proxyRotator';
 import { fetchWithRetry } from './fetchUtils';
 import { getCachedProduct, cacheProduct, getCachedComparison, cacheComparison } from './cacheUtils';
 import { getScrapingStrategy } from './scrapingStrategies';
@@ -377,7 +382,7 @@ export async function scrapeAmazonProduct(url: string): Promise<ScrapedProductDa
       imageUrl: 'https://via.placeholder.com/300x300?text=Product+Image+Unavailable',
       currentPrice: 0,
       previousPrice: 0,
-      currency: '$',
+      currency: '₹',
       asin: asin,
       metadata: {
         brand: 'Unknown',
@@ -1183,14 +1188,183 @@ export async function searchProductOnPlatforms(
 
 /**
  * Scrape Flipkart for product information
- * Enhanced with better error handling and retry logic
+ * Enhanced with modern scraping techniques and better error handling
  */
 async function scrapeFlipkart(searchTerm: string, proxy?: string): Promise<PriceComparisonItem | null> {
   try {
     const url = `https://www.flipkart.com/search?q=${encodeURIComponent(searchTerm)}`;
+    console.log(`Scraping Flipkart for: ${searchTerm}`);
+    
+    // First try: Use modern scraper service to extract embedded data (most reliable for client-side rendered pages)
+    try {
+      // Import the modern scraper service dynamically
+      const { 
+        fetchWithAdvancedHandling, 
+        extractEmbeddedJsonData, 
+        extractProductFromEmbeddedData 
+      } = await import('./modernScraperService');
+      
+      console.log('Attempting to use modern scraper for Flipkart');
+      const proxyToUse = proxy || getBestAvailableProxy(CORS_PROXIES);
+      
+      // Use the advanced fetch with better error handling and response time tracking
+      const fetchResult = await fetchWithAdvancedHandling(
+        url,
+        proxyToUse,
+        {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Referer': 'https://www.google.com/'
+          }
+        },
+        'flipkart'
+      );
+      
+      if (fetchResult && fetchResult.html) {
+        // Try to extract embedded JSON data from the page
+        const extractedData = extractEmbeddedJsonData(fetchResult.html);
+        
+        if (!extractedData.error) {
+          // Try to extract product information from the embedded data
+          const productData = extractProductFromEmbeddedData(extractedData, 'flipkart');
+          
+          if (productData) {
+            console.log('Successfully extracted Flipkart product data from embedded JSON');
+            return productData;
+          }
+        } else {
+          console.log('Could not extract embedded data from Flipkart:', extractedData.error);
+        }
+        
+        // If embedded data extraction failed, fall back to HTML parsing
+        console.log('Falling back to HTML parsing for Flipkart');
+        
+        // Check if the response actually contains product information
+        if (fetchResult.html.includes('No results found for') || 
+            fetchResult.html.includes('Sorry, no results found for') ||
+            fetchResult.html.includes('we could not find any matches')) {
+          console.log('No products found on Flipkart for this search term');
+          return null;
+        }
+        
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(fetchResult.html, 'text/html');
+        
+        // Flipkart typically shows search results with this structure
+        // Try multiple selectors to handle different page layouts
+        const productSelectors = ['._1AtVbE', '._4ddWXP', '.s1Q9rs', '._2kHMtA', 'div[data-id]'];
+        
+        let firstProduct: Element | null = null;
+        for (const selector of productSelectors) {
+          const products = doc.querySelectorAll(selector);
+          // Skip the first few elements as they might be ads or navigation
+          for (let i = 0; i < products.length; i++) {
+            const product = products[i];
+            // Check if this element contains price information
+            if (product.querySelector('._30jeq3') || product.querySelector('._1_WHN1')) {
+              firstProduct = product;
+              break;
+            }
+          }
+          if (firstProduct) break;
+        }
+        
+        if (!firstProduct) {
+          console.log('No product found in Flipkart response');
+          return null;
+        }
+        
+        // Try multiple selectors for product title
+        const titleSelectors = ['._4rR01T', '.s1Q9rs', '._3LWZlK', '.IRpwTa', 'a[title]'];
+        let productTitle = '';
+        
+        for (const selector of titleSelectors) {
+          const titleElement = firstProduct.querySelector(selector) || doc.querySelector(selector);
+          if (titleElement) {
+            productTitle = titleElement.textContent?.trim() || titleElement.getAttribute('title') || '';
+            if (productTitle) break;
+          }
+        }
+        
+        // If we still can't find the title, look for any heading inside the product card
+        if (!productTitle) {
+          const headings = firstProduct.querySelectorAll('h1, h2, h3, h4, h5');
+          if (headings.length > 0) {
+            productTitle = headings[0].textContent?.trim() || '';
+          } else {
+            // Use search term as fallback
+            productTitle = `Flipkart result for "${searchTerm}"`;
+          }
+        }
+        
+        // Try multiple selectors for price
+        const priceSelectors = ['._30jeq3', '._1_WHN1', '.a-price-whole', '._3qQ9m1', '[class*="price"]'];
+        let priceText = '';
+        
+        for (const selector of priceSelectors) {
+          const priceElement = firstProduct.querySelector(selector) || doc.querySelector(selector);
+          if (priceElement) {
+            priceText = priceElement.textContent?.trim() || '';
+            if (priceText) break;
+          }
+        }
+        
+        const { price, currency } = parsePrice(priceText);
+        
+        if (!price) {
+          console.log('Could not extract price from Flipkart');
+          return null;
+        }
+        
+        // Extract link with more robust approach
+        let productUrl = url; // Default to search URL if we can't find the product link
+        
+        // Try multiple approaches to get the product URL
+        const linkSelectors = ['a[href]', '._1fQZEK', '.s1Q9rs', '._2rpwqI'];
+        for (const selector of linkSelectors) {
+          const linkElement = firstProduct.querySelector(selector) || 
+                            firstProduct.closest(selector) || 
+                            (firstProduct.tagName === 'A' ? firstProduct : null);
+          
+          if (linkElement) {
+            const relativePath = linkElement.getAttribute('href') || '';
+            if (relativePath) {
+              productUrl = relativePath.startsWith('/') 
+                ? `https://www.flipkart.com${relativePath}` 
+                : relativePath;
+              break;
+            }
+          }
+        }
+        
+        // Check for out of stock
+        const isOutOfStock = firstProduct.querySelector('._3peOK7') !== null || // Out of stock indicator
+                          firstProduct.querySelector('._1AtVbE') !== null || // Another out of stock indicator
+                          fetchResult.html.includes('Out of Stock') ||
+                          fetchResult.html.includes('Currently unavailable');
+        
+        return {
+          marketplace: 'Flipkart',
+          productName: productTitle,
+          price: price,
+          currency: currency || '₹',
+          url: productUrl,
+          lastUpdated: new Date(),
+          inStock: !isOutOfStock
+        };
+      }
+    } catch (modernError) {
+      console.error('Error using modern scraper for Flipkart:', modernError);
+      // Fall through to legacy scraping method
+    }
+    
+    // Second try: Fall back to traditional scraping method
+    console.log('Falling back to traditional scraping for Flipkart');
     
     // Use provided proxy or get the best one
-    const proxyToUse = proxy || getBestProxy(CORS_PROXIES);
+    const proxyToUse = proxy || getBestAvailableProxy(CORS_PROXIES);
     const proxyUrl = `${proxyToUse}${encodeURIComponent(url)}`;
     
     // Set a longer timeout for the fetch request
@@ -1222,7 +1396,7 @@ async function scrapeFlipkart(searchTerm: string, proxy?: string): Promise<Price
       if (response.status === 403 || response.status === 429) {
         // Check for rate limiting
         markProxyRateLimited(proxyToUse);
-        updateProxyStats(proxyToUse, false);
+        recordProxyFailure(proxyToUse, 'Access blocked', 'flipkart');
         throw new Error(`Access blocked by Flipkart: ${response.status}`);
       } else if (response.status === 408 || response.status === 504) {
         throw new Error(`Timeout from Flipkart: ${response.status}`);
@@ -1256,7 +1430,7 @@ async function scrapeFlipkart(searchTerm: string, proxy?: string): Promise<Price
         console.error('Received captcha or security challenge page from Flipkart');
         // Mark this proxy as having security issues
         markProxyRateLimited(proxyToUse);
-        updateProxyStats(proxyToUse, false);
+        recordProxyFailure(proxyToUse, 'Security challenge', 'flipkart');
         throw new Error('Captcha or security challenge detected');
       }
       
@@ -1273,6 +1447,7 @@ async function scrapeFlipkart(searchTerm: string, proxy?: string): Promise<Price
       throw textError;
     }
     
+    // Rest of the traditional scraping logic
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
     
@@ -1349,7 +1524,7 @@ async function scrapeFlipkart(searchTerm: string, proxy?: string): Promise<Price
     }
     
     // Record successful scraping with this proxy
-    updateProxyStats(proxyToUse, true);
+    recordProxySuccess(proxyToUse, 1000, 'flipkart');
     
     return {
       marketplace: 'Flipkart',
@@ -2279,9 +2454,9 @@ function parsePrice(priceString: string): { price: number | null; currency: stri
     }
   }
   
-  // If we have a price value but no currency symbol, default to the most common one
+  // If we have a price value but no currency symbol, default to INR
   if (priceValue && !currencySymbol) {
-    currencySymbol = '$'; // Default currency if none detected
+    currencySymbol = '₹'; // Default to Indian Rupees if none detected
   }
   
   // Special handling for Indian Rupee format

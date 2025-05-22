@@ -259,7 +259,7 @@ const ProductDetail = () => {
             imageUrl={productData.imageUrl || 'https://via.placeholder.com/300'}
             currentPrice={productData.currentPrice || 0}
             previousPrice={productData.previousPrice || 0}
-            currency={productData.currency || '$'}
+            currency={productData.currency || '₹'}
             asin={productData.asin || id || ''}
             lastUpdated={productData.lastUpdated}
           />
@@ -269,7 +269,7 @@ const ProductDetail = () => {
               <PriceChart
                 priceHistory={priceHistory}
                 currentPrice={productData.currentPrice || 0}
-                currency={productData.currency || '$'}
+                currency={productData.currency || '₹'}
               />
               
               <div className="mt-6">
@@ -284,7 +284,7 @@ const ProductDetail = () => {
               <PriceAlertForm
                 productId={productData.asin || id || ''}
                 currentPrice={productData.currentPrice || 0}
-                currency={productData.currency || '$'}
+                currency={productData.currency || '₹'}
               />
               
               <ProductMetadata
