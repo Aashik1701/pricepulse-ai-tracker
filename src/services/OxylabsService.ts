@@ -2,12 +2,12 @@
 // Oxylabs API integration for real-time data scraping
 import { toast } from 'sonner';
 import { PriceComparisonItem } from '@/utils/scraperService';
+import { ENV } from '@/config/environment';
 
 const OXYLABS_API_URL = 'https://realtime.oxylabs.io/v1/queries';
-// Note: In a production environment, these credentials should be stored securely
-// in environment variables and not directly in the code
-const OXYLABS_USERNAME = 'aashik17_P2f9p';
-const OXYLABS_PASSWORD = 'AashikAsh=1715';
+// Using environment variables from centralized config
+const OXYLABS_USERNAME = ENV.OXYLABS_USERNAME;
+const OXYLABS_PASSWORD = ENV.OXYLABS_PASSWORD;
 
 // Base64 encode credentials for Basic Auth
 const getAuthHeader = (): string => {

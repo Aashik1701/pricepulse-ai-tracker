@@ -8,11 +8,11 @@ PricePulse AI Tracker is a sophisticated price tracking and product information 
 
 - Extract product data from Amazon URLs
 - Monitor price changes over time
-- Compare prices across multiple e-commerce platforms
+- Compare prices across multiple e-commerce platforms (Amazon, Flipkart, BigBasket, etc.)
 - AI-enhanced product metadata extraction
 - Resilient web scraping with proxy rotation and rate limit handling
 - Caching system to reduce unnecessary scraping requests
-- Server-side scraping fallback for handling CORS and anti-bot measures
+- Server-side scraping API to handle CORS and anti-bot measures
 - Platform-specific scraping strategies for better success rates
 - OpenAI integration for intelligent product data extraction
 
@@ -22,10 +22,10 @@ PricePulse AI Tracker is a sophisticated price tracking and product information 
 
 The scraping service uses a multi-layered approach for maximum reliability:
 
-1. **Primary Method**: Oxylabs API for real-time scraping (professional service)
-2. **Fallback Method 1**: Platform-specific scraping strategies with specialized techniques
-3. **Fallback Method 2**: Standard proxy rotation with comprehensive error handling
-4. **Fallback Method 3**: Server-side scraping to bypass CORS and browser fingerprinting
+1. **Primary Method**: Server-side scraping API endpoints (bypasses CORS and fingerprinting)
+2. **Fallback Method 1**: Oxylabs API for real-time scraping (professional service)
+3. **Fallback Method 2**: Platform-specific scraping strategies with specialized techniques
+4. **Fallback Method 3**: Standard proxy rotation with comprehensive error handling
 5. **Last Resort**: Mock data when all scraping methods fail
 
 ### AI Integration
@@ -91,7 +91,9 @@ The system implements comprehensive error handling:
 
 3. Create a `.env` file in the root directory with your API keys:
    ```
-   VITE_OPENAI_API_KEY=your_openai_api_key_here
+   OPENAI_API_KEY=your_openai_api_key_here
+   OXYLABS_USERNAME=your_oxylabs_username
+   OXYLABS_PASSWORD=your_oxylabs_password
    ```
 
 4. Start the development server:
@@ -99,14 +101,72 @@ The system implements comprehensive error handling:
    npm run dev
    ```
 
-### Testing the OpenAI Integration
+## Deployment
 
-To test the OpenAI integration specifically:
-```bash
-npm run test:openai:direct
-```
+PricePulse AI Tracker is designed to be deployed on Vercel, which supports serverless functions (API routes) for server-side scraping.
 
-This will run a script that tests the OpenAI API with sample product information.
+### Deploy to Vercel
+
+1. Install the Vercel CLI:
+   ```bash
+   npm install -g vercel
+   ```
+
+2. Run the deployment script:
+   ```bash
+   npm run deploy
+   ```
+
+   This script will:
+   - Build the application
+   - Ask for necessary environment variables
+   - Deploy to Vercel with the proper configuration
+
+3. Alternative manual deployment:
+   ```bash
+   vercel --prod
+   ```
+
+### Environment Variables
+
+Make sure to set these environment variables in your Vercel project:
+
+- `OXYLABS_USERNAME`: Your Oxylabs API username
+- `OXYLABS_PASSWORD`: Your Oxylabs API password  
+- `OPENAI_API_KEY`: (Optional) Your OpenAI API key for metadata enhancement
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Scraping fails in production but works in development**
+   - This is usually due to CORS or anti-bot measures. The application uses server-side API endpoints to bypass these issues.
+   - Make sure your Vercel deployment has the required environment variables.
+
+2. **"No results found" error when searching for products**
+   - Try using more specific search terms
+   - Check if the server-side API endpoints are working properly
+   - Verify your Oxylabs credentials if you're using the Oxylabs API
+
+3. **Slow performance when scraping**
+   - The application uses caching to improve performance
+   - First requests may be slow as they need to scrape data
+   - Subsequent requests for the same product will be faster
+
+4. **Error: "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT"**
+   - Some ad blockers may block proxy requests
+   - Temporarily disable ad blockers or add exceptions for the application
+   
+5. **Price comparison not working**
+   - The price comparison uses different scraping techniques for different platforms
+   - Try searching with both the product name and brand for better results
+
+### Debugging Tips
+
+- Check the browser console for detailed error messages
+- Look for error responses from the server-side API endpoints
+- Verify network requests to ensure they're not being blocked
+- Use the built-in debugging tools in the code (verbose logging)
 
 ## Technical Requirements
 

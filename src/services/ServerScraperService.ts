@@ -4,14 +4,22 @@
  * This service provides server-side scraping functionality as a fallback
  * when client-side scraping fails due to CORS or anti-bot measures.
  * 
- * In a production environment, this would be implemented as an API endpoint
- * on your server or as a serverless function.
+ * It uses the server-side API endpoints to fetch product data and price comparisons.
  */
 
 import { ScrapedProductData, PriceComparisonItem } from '@/utils/scraperService';
 
-// Mock API endpoint - replace with your actual implementation
-const API_ENDPOINT = 'https://api.yourservice.com/scrape';
+// API endpoints based on Vercel deployment - will work both in development and production
+const getApiBaseUrl = (): string => {
+  if (typeof window === 'undefined') {
+    return 'http://localhost:3000'; // For server-side rendering (if used)
+  }
+  
+  // For client-side rendering
+  const protocol = window.location.protocol;
+  const host = window.location.host;
+  return `${protocol}//${host}`;
+};
 
 /**
  * Use server-side scraping as a fallback
@@ -19,13 +27,10 @@ const API_ENDPOINT = 'https://api.yourservice.com/scrape';
  */
 export async function scrapeProductServer(url: string): Promise<ScrapedProductData | null> {
   try {
-    console.log('Attempting server-side scraping fallback');
+    console.log('Attempting server-side scraping via API endpoint');
     
-    // In a real implementation, this would make a request to your backend API
-    // For now, we'll simulate a response
-    
-    // For testing purposes only - in production use real API calls
-    if (process.env.NODE_ENV === 'development') {
+    // For development testing to see all API calls
+    if (process.env.NODE_ENV === 'development' && process.env.USE_MOCK_DATA === 'true') {
       // Simulate an API response delay
       await new Promise(resolve => setTimeout(resolve, 1500));
       
@@ -38,8 +43,9 @@ export async function scrapeProductServer(url: string): Promise<ScrapedProductDa
         imageUrl: 'https://via.placeholder.com/300x300?text=Server+Scraped+Image',
         currentPrice: Math.floor(Math.random() * 10000) / 100 + 10,
         previousPrice: Math.floor(Math.random() * 15000) / 100 + 15,
-        currency: '$',
+        currency: '₹',
         asin: asin || 'UNKNOWN',
+        url,
         metadata: {
           brand: 'Server Scraper Brand',
           model: 'SSM-2000',
@@ -49,21 +55,36 @@ export async function scrapeProductServer(url: string): Promise<ScrapedProductDa
       };
     }
     
-    // Real implementation for production
-    const response = await fetch(API_ENDPOINT, {
-      method: 'POST',
+    // Make a request to the server-side API endpoint
+    const apiUrl = `${getApiBaseUrl()}/api/scrape?url=${encodeURIComponent(url)}`;
+    console.log('API endpoint:', apiUrl);
+    
+    const response = await fetch(apiUrl, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'API-Key': process.env.SCRAPER_API_KEY || ''
-      },
-      body: JSON.stringify({ url })
+        'Content-Type': 'application/json'
+      }
     });
     
     if (!response.ok) {
-      throw new Error(`Server scraping failed: ${response.status}`);
+      const errorText = await response.text();
+      console.error('API error response:', errorText);
+      throw new Error(`Server scraping failed: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
+    
+    if (data.error) {
+      throw new Error(data.error);
+    }
+    
+    // Ensure the lastUpdated field is a Date object
+    if (data.lastUpdated && typeof data.lastUpdated === 'string') {
+      data.lastUpdated = new Date(data.lastUpdated);
+    } else {
+      data.lastUpdated = new Date();
+    }
+    
     return data;
   } catch (error) {
     console.error('Server-side scraping failed:', error);
@@ -80,11 +101,8 @@ export async function searchProductAcrossPlatformsServer(
   try {
     console.log('Attempting server-side comparison search');
     
-    // In a real implementation, this would make a request to your backend API
-    // For now, we'll simulate a response
-    
-    // For testing purposes only
-    if (process.env.NODE_ENV === 'development') {
+    // For development testing
+    if (process.env.NODE_ENV === 'development' && process.env.USE_MOCK_DATA === 'true') {
       // Simulate an API response delay
       await new Promise(resolve => setTimeout(resolve, 2000));
       
@@ -95,28 +113,28 @@ export async function searchProductAcrossPlatformsServer(
           marketplace: 'Amazon (Server)',
           productName: `${searchTerm} - Amazon Result`,
           price: basePrice,
-          currency: '$',
-          url: `https://www.amazon.com/s?k=${encodeURIComponent(searchTerm)}`,
+          currency: '₹',
+          url: `https://www.amazon.in/s?k=${encodeURIComponent(searchTerm)}`,
           lastUpdated: new Date(),
           inStock: true,
           isLowestPrice: false
         },
         {
-          marketplace: 'Walmart (Server)',
-          productName: `${searchTerm} - Walmart Result`,
+          marketplace: 'Flipkart (Server)',
+          productName: `${searchTerm} - Flipkart Result`,
           price: basePrice * 0.9, // 10% cheaper
-          currency: '$',
-          url: `https://www.walmart.com/search/?query=${encodeURIComponent(searchTerm)}`,
+          currency: '₹',
+          url: `https://www.flipkart.com/search?q=${encodeURIComponent(searchTerm)}`,
           lastUpdated: new Date(),
           inStock: true,
           isLowestPrice: true
         },
         {
-          marketplace: 'Target (Server)',
-          productName: `${searchTerm} - Target Result`,
+          marketplace: 'BigBasket (Server)',
+          productName: `${searchTerm} - BigBasket Result`,
           price: basePrice * 1.05, // 5% more expensive
-          currency: '$',
-          url: `https://www.target.com/s?searchTerm=${encodeURIComponent(searchTerm)}`,
+          currency: '₹',
+          url: `https://www.bigbasket.com/ps/?q=${encodeURIComponent(searchTerm)}`,
           lastUpdated: new Date(),
           inStock: true,
           isLowestPrice: false
@@ -124,14 +142,14 @@ export async function searchProductAcrossPlatformsServer(
       ];
     }
     
-    // Real implementation for production
-    const response = await fetch(`${API_ENDPOINT}/compare`, {
-      method: 'POST',
+    // Make a request to the server-side API endpoint
+    const apiUrl = `${getApiBaseUrl()}/api/compare?productName=${encodeURIComponent(searchTerm)}`;
+    
+    const response = await fetch(apiUrl, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'API-Key': process.env.SCRAPER_API_KEY || ''
-      },
-      body: JSON.stringify({ searchTerm })
+        'Content-Type': 'application/json'
+      }
     });
     
     if (!response.ok) {
@@ -139,7 +157,12 @@ export async function searchProductAcrossPlatformsServer(
     }
     
     const data = await response.json();
-    return data;
+    
+    // Ensure the lastUpdated field is a Date object for each item
+    return data.map((item: PriceComparisonItem) => ({
+      ...item,
+      lastUpdated: item.lastUpdated ? new Date(item.lastUpdated) : new Date()
+    }));
   } catch (error) {
     console.error('Server-side comparison failed:', error);
     return [];

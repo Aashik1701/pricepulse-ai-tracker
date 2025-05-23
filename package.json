@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:openai": "node --experimental-modules scripts/test-openai.mjs",
-    "test:openai:direct": "node --experimental-modules scripts/direct-test-openai.mjs"
+    "test:openai:direct": "node --experimental-modules scripts/direct-test-openai.mjs",
+    "deploy": "node scripts/deploy.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -42,6 +43,9 @@
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.4",
     "@tanstack/react-query": "^5.56.2",
+    "axios": "^1.9.0",
+    "cheerio": "^1.0.0",
+    "chrome-aws-lambda": "^10.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
@@ -52,6 +56,7 @@
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
     "openai": "^4.102.0",
+    "puppeteer-core": "^24.9.0",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
