@@ -5,15 +5,24 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import EmailAlertPreview from './EmailAlertPreview';
-import { mockProduct } from '@/data/mockData';
 
 interface PriceAlertFormProps {
   productId: string;
   currentPrice: number;
   currency: string;
+  productName: string;
+  productImage: string;
+  productUrl: string;
 }
 
-const PriceAlertForm = ({ productId, currentPrice, currency }: PriceAlertFormProps) => {
+const PriceAlertForm = ({ 
+  productId, 
+  currentPrice, 
+  currency, 
+  productName,
+  productImage,
+  productUrl 
+}: PriceAlertFormProps) => {
   const [email, setEmail] = useState('');
   const [targetPrice, setTargetPrice] = useState('');
   const [loading, setLoading] = useState(false);
@@ -128,12 +137,12 @@ const PriceAlertForm = ({ productId, currentPrice, currency }: PriceAlertFormPro
           <div className="mt-6">
             <h3 className="text-sm font-medium mb-2">Email Preview</h3>
             <EmailAlertPreview
-              productName={mockProduct.name}
-              productImage={mockProduct.imageUrl}
+              productName={productName}
+              productImage={productImage}
               currentPrice={currentPrice}
               targetPrice={parseFloat(targetPrice)}
               currency={currency}
-              productUrl={`https://www.amazon.com/dp/${mockProduct.asin}`}
+              productUrl={productUrl}
             />
           </div>
         )}

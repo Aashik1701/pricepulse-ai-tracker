@@ -4,7 +4,7 @@
  * This file contains different scraping approaches for handling
  * various protection mechanisms used by e-commerce sites.
  */
-
+//scrapingStrategies.ts
 import { fetchWithRetry } from './fetchUtils';
 import { markProxyRateLimited, updateProxyStats } from './proxyUtils';
 

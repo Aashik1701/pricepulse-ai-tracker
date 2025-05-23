@@ -2,7 +2,7 @@
  * Modern scraping service for client-side rendered websites
  * Provides utilities to extract data from JavaScript frameworks like React, Next.js, etc.
  */
-
+//modernScraperService.ts
 import { PriceComparisonItem } from './scraperService';
 import { 
   getBestAvailableProxy, 
@@ -17,13 +17,22 @@ interface ExtractedApiData {
   items?: ProductData[];
   results?: ProductData[];
   data?: {
+    pageDataV4: any;
+    SEARCH_RESPONSE: any;
+    ta_results: any;
+    __STATE__: any;
+    searchResult: any;
+    productList: unknown;
     props?: {
       pageProps?: {
+        initialData: any;
         product?: ProductData;
         catalogList?: { products: ProductData[] };
         searchResults?: { products: ProductData[] };
         initialState?: {
-          search?: { products: ProductData[] };
+          search?: {
+            results: unknown; products: ProductData[] 
+};
           instamart?: { products: ProductData[] };
         };
       };

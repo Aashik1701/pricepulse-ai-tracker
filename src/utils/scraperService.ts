@@ -1,3 +1,4 @@
+//scraperService.ts
 import { toast } from 'sonner';
 import { OpenAIService } from '@/services/OpenAIService';
 import { 
@@ -27,6 +28,7 @@ export interface ScrapedProductData {
   previousPrice?: number;
   currency?: string;
   asin?: string;
+  url?: string;
   metadata?: {
     brand?: string;
     model?: string;

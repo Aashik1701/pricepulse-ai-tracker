@@ -7,7 +7,6 @@ import PriceChart from '@/components/product/PriceChart';
 import PriceAlertForm from '@/components/product/PriceAlertForm';
 import PriceComparison from '@/components/product/PriceComparison';
 import ProductMetadata from '@/components/product/ProductMetadata';
-import { mockProduct } from '@/data/mockData';
 import { toast } from 'sonner';
 import { ScrapedProductData, PriceComparisonItem, scrapeAmazonProduct, searchProductOnPlatforms } from '@/utils/scraperService';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -44,7 +43,7 @@ const ProductDetail = () => {
   const [productData, setProductData] = useState<ScrapedProductData | null>(null);
   const [priceComparison, setPriceComparison] = useState<PriceComparisonItem[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [priceHistory, setPriceHistory] = useState(mockProduct.priceHistory);
+  const [priceHistory, setPriceHistory] = useState<{date: Date; price: number}[]>([]);
   
   // Generate realistic price history from current price if we have real data
   const generatePriceHistory = (currentPrice: number) => {
@@ -114,21 +113,27 @@ const ProductDetail = () => {
           // After getting product data, start other operations
           fetchComparisonData(scrapedData);
         } else {
-          // Fallback to mock data if scraping fails
-          toast.warning("Using mock data as fallback", {
-            description: "Could not fetch live data from Amazon"
+          // Fallback to basic data if scraping fails
+          toast.warning("Could not fetch complete data from Amazon", {
+            description: "Some information may be missing or incomplete"
           });
+          
           setProductData({
-            name: mockProduct.name,
-            imageUrl: mockProduct.imageUrl,
-            currentPrice: mockProduct.currentPrice,
-            previousPrice: mockProduct.previousPrice,
-            currency: mockProduct.currency,
-            asin: mockProduct.asin,
-            metadata: mockProduct.metadata,
-            lastUpdated: mockProduct.lastUpdated
+            name: `Amazon Product (${id})`,
+            imageUrl: "https://via.placeholder.com/300x300?text=Product+Image+Unavailable",
+            currentPrice: 0,
+            previousPrice: 0,
+            currency: "₹",
+            asin: id || "",
+            url: `https://www.amazon.com/dp/${id}`,
+            metadata: {
+              brand: "Unknown",
+              features: ["Product information could not be retrieved"]
+            },
+            lastUpdated: new Date()
           });
-          document.title = `${mockProduct.name} - Price Tracking | PricePulse`;
+          
+          document.title = `Amazon Product (${id}) - Price Tracking | PricePulse`;
           fetchComparisonData(null);
         }
       } catch (error) {
@@ -159,8 +164,9 @@ const ProductDetail = () => {
             description: "Price comparison updated with latest prices",
           });
         } else {
-          // Use mock comparison data
-          setPriceComparison(mockProduct.priceComparison);
+          // Use empty comparison data if product not found
+          setPriceComparison([]);
+          toast.warning("No comparison data available");
         }
       } catch (error) {
         console.error("Error fetching comparison data:", error);
@@ -285,6 +291,9 @@ const ProductDetail = () => {
                 productId={productData.asin || id || ''}
                 currentPrice={productData.currentPrice || 0}
                 currency={productData.currency || '₹'}
+                productName={productData.name || 'Product'}
+                productImage={productData.imageUrl || 'https://via.placeholder.com/300x300?text=Product+Image+Unavailable'}
+                productUrl={productData.url || `https://www.amazon.com/dp/${productData.asin || id || ''}`}
               />
               
               <ProductMetadata
