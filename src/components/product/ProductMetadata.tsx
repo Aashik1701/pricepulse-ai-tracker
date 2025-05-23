@@ -10,7 +10,7 @@ interface ProductMetadataProps {
     model?: string;
     category?: string;
     features?: string[];
-    [key: string]: unknown;
+    [key: string]: string | string[] | undefined;
   };
 }
 
@@ -37,7 +37,7 @@ const ProductMetadata = ({ metadata }: ProductMetadataProps) => {
               {metadataEntries.map(([key, value]) => (
                 <TableRow key={key}>
                   <TableCell className="font-medium capitalize">{key}</TableCell>
-                  <TableCell>{value}</TableCell>
+                  <TableCell>{String(value)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
