@@ -1,8 +1,11 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "pricepulse-ai-tracker",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -11,7 +14,8 @@
     "preview": "vite preview",
     "test:openai": "node --experimental-modules scripts/test-openai.mjs",
     "test:openai:direct": "node --experimental-modules scripts/direct-test-openai.mjs",
-    "deploy": "node scripts/deploy.mjs"
+    "deploy": "node scripts/deploy.mjs",
+    "vercel-build": "bash ./vercel-build.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -46,7 +50,7 @@
     "@tanstack/react-query": "^5.56.2",
     "axios": "^1.9.0",
     "cheerio": "^1.0.0",
-    "chrome-aws-lambda": "^10.1.0",
+    "chrome-aws-lambda": "^1.20.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
@@ -87,6 +91,6 @@
     "tailwindcss": "^3.4.11",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
-    "vite": "^5.4.1"
+    "vite": "^6.3.5"
   }
 }

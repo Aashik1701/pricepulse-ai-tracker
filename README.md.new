@@ -4,12 +4,11 @@ PricePulse is an advanced e-commerce price tracking and comparison application t
 
 ## Key Features
 
-- Track product prices from Amazon, Flipkart, BigBasket, Myntra, and more
+- Track product prices from Amazon, Flipkart, BigBasket, and more
 - Compare prices across multiple e-commerce platforms
 - Set up price drop alerts and notifications
 - Secure user authentication via Supabase
 - Server-side scraping to bypass CORS limitations
-- Robust error monitoring and reporting system
 
 ## System Architecture
 
@@ -17,7 +16,7 @@ The application uses a multi-layered approach to e-commerce data extraction:
 
 1. **Server-side API Endpoints**: The primary method for scraping product data
    - `/api/scrape.js` - Amazon product data extraction
-   - `/api/compare.js` - Multi-platform price comparison (Amazon, Flipkart, BigBasket, Myntra)
+   - `/api/compare.js` - Multi-platform price comparison
    - `/api/errors.js` - Error monitoring and reporting
 
 2. **Client-side Fallbacks**: Used when server-side scraping is unavailable
@@ -102,15 +101,6 @@ PricePulse includes a robust error monitoring system:
 2. View detailed error logs with contextual information
 3. Clear error logs when issues are resolved
 
-## Supported E-commerce Platforms
-
-The application currently supports price comparison across the following platforms:
-
-1. **Amazon India** - Comprehensive product data extraction
-2. **Flipkart** - India's leading e-commerce platform
-3. **BigBasket** - Grocery and household items
-4. **Myntra** - Fashion and apparel products
-
 ## Troubleshooting
 
 ### Common Issues
@@ -129,11 +119,3 @@ If you encounter issues, check:
 ## License
 
 This project is proprietary software. All rights reserved.
-
-## Future Enhancements
-
-1. Add support for more e-commerce platforms (Amazon Global, Nykaa, Croma)
-2. Implement price history charts and analytics
-3. Add email notifications for price drops
-4. Develop a mobile app version
-5. Integrate with additional payment gateways
