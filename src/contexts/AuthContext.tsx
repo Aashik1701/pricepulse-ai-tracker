@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
@@ -8,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 type AuthContextType = {
   session: Session | null;
   user: User | null;
-  profile: any | null;
+  profile: unknown | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
@@ -99,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       
       return data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error("Signup failed", { description: error.message });
       throw error;
     }
