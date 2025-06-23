@@ -124,10 +124,29 @@ async function main() {
     }
   }
   
-  // Final deployment
-  const deployCommand = 'vercel --prod';
+  // Check if project is linked to Vercel
+  console.log('\n🔍 Checking if project is linked to Vercel...');
+  try {
+    const vercelConfig = fs.existsSync('.vercel/project.json');
+    if (!vercelConfig) {
+      console.log('⚠️  Project not linked to Vercel. Linking now...');
+      executeCommand('vercel link --yes');
+    } else {
+      console.log('✅ Project is already linked to Vercel.');
+    }
+  } catch (error) {
+    console.log('⚠️  Could not check Vercel configuration. Linking project...');
+    executeCommand('vercel link --yes');
+  }
+
+  // Final deployment with confirmation
+  console.log('\n🚀 Deploying to Vercel...');
+  const deployCommand = 'vercel --prod --yes';
   if (!executeCommand(deployCommand)) {
     console.error('Deployment failed. Please check the error messages above.');
+    console.log('\n⚠️  If deployment failed, try running these commands manually:');
+    console.log('1. vercel link --yes');
+    console.log('2. vercel --prod --yes');
     process.exit(1);
   }
   

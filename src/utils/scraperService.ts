@@ -135,29 +135,7 @@ export async function scrapeAmazonProduct(url: string): Promise<ScrapedProductDa
   });
 
   try {
-    // First try: Use server-side scraping via API endpoint (most reliable method)
-    console.log('Attempting to use server-side API endpoint for scraping');
-    try {
-      // Import the ServerScraperService
-      const ServerScraperService = await import('@/services/ServerScraperService');
-      
-      // Use the server-side API to get data
-      const productData = await ServerScraperService.scrapeProductServer(url);
-      
-      if (productData) {
-        toast.success('Product data extracted successfully via server');
-        
-        // Cache the successful result
-        cacheProduct(asin, productData);
-        
-        return productData;
-      }
-    } catch (serverError) {
-      console.error('Error using server-side scraping:', serverError);
-      toast.warning('Primary server data source unavailable, trying alternative methods...');
-    }
-
-    // Second try: Use Oxylabs API for real-time data (as a fallback)
+    // First try: Use Oxylabs API for real-time data (most reliable method)
     console.log('Attempting to use Oxylabs API');
     try {
       // Import the Oxylabs service
@@ -165,7 +143,6 @@ export async function scrapeAmazonProduct(url: string): Promise<ScrapedProductDa
       
       // Use Oxylabs API to get real-time data
       const productData = await OxylabsService.scrapeAmazonProduct(asin);
-      
       
       // If we have product data from Oxylabs, enhance with AI metadata
       if (productData) {
@@ -701,43 +678,7 @@ export async function searchProductOnPlatforms(
   });
   
   try {
-    // First try: Use server-side API endpoint (most reliable method)
-    console.log('Attempting to use server-side API for price comparison');
-    try {
-      const ServerScraperService = await import('@/services/ServerScraperService');
-      
-      // Use the server-side API to get comparison data
-      const results = await ServerScraperService.searchProductAcrossPlatformsServer(searchTerm);
-      
-      if (results && results.length > 0) {
-        toast.success('Found price comparisons across multiple retailers');
-        
-        // Mark the lowest price item if not already marked
-        let hasLowestPrice = results.some(item => item.isLowestPrice);
-        if (!hasLowestPrice) {
-          const lowestPrice = Math.min(...results.map(item => item.price));
-          const markedResults = results.map(item => ({
-            ...item,
-            isLowestPrice: item.price === lowestPrice
-          }));
-          
-          // Cache the results
-          cacheComparison(searchTerm, markedResults);
-          return markedResults;
-        }
-        
-        // Cache the results
-        cacheComparison(searchTerm, results);
-        return results;
-      } else {
-        console.warn('No comparison results found from server API');
-        // Don't show a warning toast here, we'll handle it in the fallback
-      }
-    } catch (serverError) {
-      console.error('Error using server-side API for price comparison:', serverError);
-    }
-    
-    // Second try: Use Oxylabs Google Shopping API to get real price comparison data
+    // First try: Use Oxylabs Google Shopping API to get real price comparison data
     const { OxylabsService } = await import('@/services/OxylabsService');
     
     try {
@@ -1675,7 +1616,7 @@ async function scrapeMeesho(searchTerm: string, proxy?: string): Promise<PriceCo
       
       // Check for captcha, robot checks, or other blockages with more comprehensive patterns
       if (html.includes('captcha') || 
-          html.includes('robot') ||
+          html.includes('robot check') ||
           html.includes('verify you are a human') ||
           html.includes('automated access') ||
           html.includes('unusual traffic') ||

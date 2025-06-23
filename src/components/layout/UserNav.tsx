@@ -54,6 +54,11 @@ export function UserNav() {
         <DropdownMenuItem asChild>
           <Link to="/profile">Profile</Link>
         </DropdownMenuItem>
+        {profile?.is_admin && (
+          <DropdownMenuItem asChild>
+            <Link to="/admin">Admin Dashboard</Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => signOut()} className="text-red-600">
           Log out

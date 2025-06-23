@@ -138,6 +138,16 @@ export async function searchProductAcrossPlatformsServer(
           lastUpdated: new Date(),
           inStock: true,
           isLowestPrice: false
+        },
+        {
+          marketplace: 'Myntra (Server)',
+          productName: `${searchTerm} - Myntra Fashion`,
+          price: basePrice * 0.95, // 5% cheaper
+          currency: '₹',
+          url: `https://www.myntra.com/${encodeURIComponent(searchTerm.replace(/\s+/g, '-'))}`,
+          lastUpdated: new Date(),
+          inStock: true,
+          isLowestPrice: false
         }
       ];
     }

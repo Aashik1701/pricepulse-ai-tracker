@@ -9,7 +9,11 @@ const DEFAULT_ENV = {
   OXYLABS_PASSWORD: 'AashikAsh=1715',
   
   // API Keys
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+  OPENAI_API_KEY: import.meta.env.VITE_OPENAI_API_KEY || '',
+  
+  // Supabase Configuration
+  SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL || 'https://cbgrkkpscyxcjkmrfzzg.supabase.co',
+  SUPABASE_KEY: import.meta.env.VITE_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNiZ3Jra3BzY3l4Y2prbXJmenpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5ODU0ODAsImV4cCI6MjA2MzU2MTQ4MH0.AXKHyDN1INDUzErG7Pw4IWL2zysVgSmVvcKbOr_tsDc',
   
   // Proxies
   DEFAULT_PROXY: 'https://corsproxy.io/?',
@@ -33,21 +37,23 @@ export const ENV = {
   ...DEFAULT_ENV,
   
   // Override with actual environment variables when available
-  OXYLABS_USERNAME: process.env.OXYLABS_USERNAME || DEFAULT_ENV.OXYLABS_USERNAME,
-  OXYLABS_PASSWORD: process.env.OXYLABS_PASSWORD || DEFAULT_ENV.OXYLABS_PASSWORD,
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY || DEFAULT_ENV.OPENAI_API_KEY,
+  OXYLABS_USERNAME: import.meta.env.VITE_OXYLABS_USERNAME || DEFAULT_ENV.OXYLABS_USERNAME,
+  OXYLABS_PASSWORD: import.meta.env.VITE_OXYLABS_PASSWORD || DEFAULT_ENV.OXYLABS_PASSWORD,
+  OPENAI_API_KEY: import.meta.env.VITE_OPENAI_API_KEY || DEFAULT_ENV.OPENAI_API_KEY,
+  SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL || DEFAULT_ENV.SUPABASE_URL,
+  SUPABASE_KEY: import.meta.env.VITE_SUPABASE_KEY || DEFAULT_ENV.SUPABASE_KEY,
   
   // Parse numeric values
-  CACHE_DURATION_MINUTES: process.env.CACHE_DURATION_MINUTES 
-    ? parseInt(process.env.CACHE_DURATION_MINUTES, 10) 
+  CACHE_DURATION_MINUTES: import.meta.env.VITE_CACHE_DURATION_MINUTES 
+    ? parseInt(import.meta.env.VITE_CACHE_DURATION_MINUTES, 10) 
     : DEFAULT_ENV.CACHE_DURATION_MINUTES,
   
   // Parse boolean values
-  PREFER_SERVER_SCRAPING: process.env.PREFER_SERVER_SCRAPING === 'false' 
+  PREFER_SERVER_SCRAPING: import.meta.env.VITE_PREFER_SERVER_SCRAPING === 'false' 
     ? false 
     : DEFAULT_ENV.PREFER_SERVER_SCRAPING,
   
-  USE_MOCK_DATA: process.env.USE_MOCK_DATA === 'true' 
+  USE_MOCK_DATA: import.meta.env.VITE_USE_MOCK_DATA === 'true' 
     ? true 
     : DEFAULT_ENV.USE_MOCK_DATA
 };
